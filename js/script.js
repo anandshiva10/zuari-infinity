@@ -18,30 +18,60 @@ async function loadFragment(placeholderSelector, url) {
 // Event delegation for smooth scrolling (works for injected links too)
 function setupSmoothScroll() {
   document.addEventListener("click", (e) => {
-    const link = e.target.closest('a[href^="#"]');
+    const link = e.target.closest("a[href]");
     if (!link) return;
 
     const href = link.getAttribute("href");
-    if (!href || href === "#") return;
+    if (!href) return;
 
-    const target = document.querySelector(href);
-    if (!target) return;
+    // Case 1: Pure hash links (stay on same page)
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      closeMobileMenu();
+      return;
+    }
 
-    e.preventDefault();
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Case 2: Links like /index.html#about
+    if (href.includes("index.html#")) {
+      // Are we already on index.html?
+      const onHomePage =
+        window.location.pathname.endsWith("index.html") ||
+        window.location.pathname === "/" ||
+        window.location.pathname === "/index";
 
-    // If a nav link on mobile, close the menu
-    const navMenu = document.getElementById("nav-menu");
-    const mobileToggle = document.getElementById("mobile-toggle");
-    const navbar = document.getElementById("navbar");
-    if (navMenu && mobileToggle && navbar && navMenu.classList.contains("active")) {
-      navMenu.classList.remove("active");
-      document.body.classList.remove("lock-scroll");
-      navbar.classList.remove("dark");
-      mobileToggle.setAttribute("aria-expanded", "false");
+      if (onHomePage) {
+        // Intercept and smooth scroll
+        e.preventDefault();
+        const id = href.split("#")[1];
+        const target = document.getElementById(id);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        closeMobileMenu();
+      }
+      // else: do NOT preventDefault, let browser navigate to index.html
     }
   });
 }
+
+// Utility: close mobile menu
+function closeMobileMenu() {
+  const navMenu = document.getElementById("nav-menu");
+  const mobileToggle = document.getElementById("mobile-toggle");
+  const navbar = document.getElementById("navbar");
+  if (navMenu && navMenu.classList.contains("active")) {
+    navMenu.classList.remove("active");
+    document.body.classList.remove("lock-scroll");
+    navbar.classList.remove("dark");
+    mobileToggle.setAttribute("aria-expanded", "false");
+  }
+}
+
+
 
 function setupNavbarBehavior() {
   const navbar = document.getElementById("navbar");
